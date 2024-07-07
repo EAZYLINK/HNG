@@ -3,7 +3,7 @@ const express = require('express')
 const { sequelize, User, Organisation } = require('./models')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-const { UUIDV4 } = require('sequelize')
+const UUIDV4 = require('uuid4')
 
 
 const app = express()
@@ -24,11 +24,23 @@ const authenticateToken = (req, res, next) => {
 app.post('/auth/register', async(req, res) =>{
     const {firstName, lastName, email, password, phone} = req.body
     try {
-        const hashedPassword = bcrypt.hash(password, 10)
+        const emailExists = await User.findOne({where: { email }})
+        if (emailExists) return res.status(422).json({
+            status: 'error', 
+            message: 'Duplicate email', 
+            statusCode: 422
+        })
+        if (!firstName || !lastName || !email || !password || !phone) return res.status(400).json({
+            status: 'Bad request',
+            message: 'Unsuccessful registration',
+            statusCode: 400
+        })
+        const hashedPassword = await bcrypt.hash(password, 10)
         const user = await User.create({userId: UUIDV4(), firstName, lastName, email, password:hashedPassword, phone})
+        console.log(user)
         const org = await Organisation.create({orgId: UUIDV4(), name: `${firstName}'s Organisation`, description: ''})
         await user.addOrganisation(org)
-        const accessToken = jwt.sign({userId: user.userId, email: user.email}, JWT_SECRET)
+        const accessToken = jwt.sign({userId: user.userId, email: user.email}, JWT_SECRET, {expiresIn: '1h'})
         res.status(201).json({
             status: 'success',
             message: 'Registration successful',
@@ -37,7 +49,7 @@ app.post('/auth/register', async(req, res) =>{
     } catch (error) {
         res.status(400).json({
             status: 'Bad request',
-            message: 'Unsuccessful registration',
+            message: error.message,
             statusCode: 400
         })
     }
@@ -47,6 +59,7 @@ app.post('/auth/login', async (req, res) => {
     const { email, password } = req.body
     try {
         const user = await User.findOne({where: { email }})
+        console.log(email)
         if (!user) return res.status(401).json({
             status: 'Bad request', 
             message: 'Authentication failed', 
@@ -58,7 +71,7 @@ app.post('/auth/login', async (req, res) => {
             message: 'Authentication failed', 
             statusCode: 401
         })
-        const accessToken = jwt.sign({userId: user.userId, email: user.email}, JWT_SECRET)
+        const accessToken = jwt.sign({userId: user.userId, email: user.email}, JWT_SECRET, {expiresIn: '1h'})
         res.status(200).json({
             status: success,
             message: 'Login successful',
@@ -239,11 +252,9 @@ app.post('/api/organisations/:orgId/users', authenticateToken,async(req, res) =>
 })
 
 app.listen(PORT, async() => {
-    try {
         await sequelize.sync({force: true})
         console.log('Database synced')
         console.log(`Server is running on port ${PORT}`)
-    } catch (error) {
-        console.error('Unable to sync database', error)
-    }
 })
+
+module.exports = app
