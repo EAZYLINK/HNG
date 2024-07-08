@@ -6,20 +6,13 @@ module.exports = (sequelize, DataTypes) => {
   class Organisation extends Model {
     static associate(models) {
       Organisation.belongsToMany(models.User, {
-        through: 'UserOrganization'
+        through: 'UserOrganisation'
       })
     }
   }
   Organisation.init({
-    orgId: {
-      type: DataTypes.STRING,
-      unique: true,
-      allowNull: false
-    },
-    name: {
-      type: DataTypes.STRING,
-      allowNull: false
-    },
+    orgId: DataTypes.STRING,
+    name: DataTypes.STRING,
     description: DataTypes.STRING
   }, {
     sequelize,

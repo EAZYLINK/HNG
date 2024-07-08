@@ -21,6 +21,13 @@ const authenticateToken = (req, res, next) => {
 })
 }
 
+app.get('/', (req, res) => {
+    res.status(200).json({
+        status: 'success',
+        message: "Welcome to User and Organization API"
+    })
+})
+
 app.post('/auth/register', async(req, res) =>{
     const {firstName, lastName, email, password, phone} = req.body
     try {
@@ -37,7 +44,6 @@ app.post('/auth/register', async(req, res) =>{
         })
         const hashedPassword = await bcrypt.hash(password, 10)
         const user = await User.create({userId: UUIDV4(), firstName, lastName, email, password:hashedPassword, phone})
-        console.log(user)
         const org = await Organisation.create({orgId: UUIDV4(), name: `${firstName}'s Organisation`, description: ''})
         await user.addOrganisation(org)
         const accessToken = jwt.sign({userId: user.userId, email: user.email}, JWT_SECRET, {expiresIn: '1h'})
@@ -55,39 +61,51 @@ app.post('/auth/register', async(req, res) =>{
     }
 })
 
-app.post('/auth/login', async (req, res) => {
-    const { email, password } = req.body
+app.post('/auth/login', async(req, res) => {
+    const { email, password } = req.body;
     try {
-        const user = await User.findOne({where: { email }})
-        console.log(email)
-        if (!user) return res.status(401).json({
-            status: 'Bad request', 
-            message: 'Authentication failed',
-            statusCode: 401
-        })
-        const validPassword = await bcrypt.compare(password, user.password)
-        if (!validPassword) return res.status(401).json({
-            status: 'Bad request', 
-            message: 'Authentication failed', 
-            statusCode: 401
-        })
-        const accessToken = jwt.sign({userId: user.userId, email: user.email}, JWT_SECRET, {expiresIn: '1h'})
-        res.status(200).json({
-            status: success,
-            message: 'Login successful',
-            data: {accessToken, user}
-        })
+      if (!email || !password) {
+        return res.status(400).json({
+          status: 'Bad request',
+          message: 'Email and password are required',
+          statusCode: 400,
+        });
+      }
+      const user = await User.findOne({ where: { email } });
+      if (!user) {
+        return res.status(401).json({
+          status: 'Unauthorized',
+          message: 'Authentication failed',
+          statusCode: 401,
+        });
+      }
+      const validPassword = await bcrypt.compare(password, user.password);
+      if (!validPassword) {
+        return res.status(401).json({
+          status: 'Unauthorized',
+          message: 'Authentication failed',
+          statusCode: 401,
+        });
+      }
+      const accessToken = jwt.sign({ userId: user.userId, email: user.email }, JWT_SECRET, { expiresIn: '1h' });
+      res.status(200).json({
+        status: 'success',
+        message: 'Login successful',
+        data: { accessToken, user },
+      });
     } catch (error) {
-        res.status(400).json({
-            status: 'Bad request',
-            message: 'Authentication failed',
-            statusCode: 401
-        })
+      res.status(400).json({
+        status: 'Bad request',
+        message: error.message,
+        statusCode: 400,
+      });
     }
-})
+  });
+  
 
 app.get('/api/users/:id', authenticateToken, async(req, res) => {
     const { id } = req.params
+    console.log(req.user)
     if (id !== req.user.userId) return res.status(403).json({
         status: 'Unauthorized',
         message: 'Access denied',
@@ -216,7 +234,7 @@ app.post('/api/organisations/:orgId/users', authenticateToken,async(req, res) =>
         message: 'User ID required',
         statusCode: 400
     })
-    const user = user.findOne({where: {userId: req.user.userId}})
+    const user = User.findOne({where: {userId: req.user.userId}})
     if (!user) return res.status(403).json({
         status: 'Unauthorized',
         message: 'Forbidden',
