@@ -1,6 +1,7 @@
 require('dotenv').config()
 const express = require('express')
 const { sequelize, User, Organisation } = require('./models')
+const db = require('./models')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const UUIDV4 = require('uuid4')
@@ -270,8 +271,12 @@ app.post('/api/organisations/:orgId/users', authenticateToken,async(req, res) =>
 })
 
 app.listen(PORT, async() => {
-        await sequelize.sync({force: true})
-        console.log('Database synced')
+        await sequelize.sync().then(() => {
+            console.log('Database synced')
+        })
+        .catch((err) => {
+            console.log("Failed to sync db: " + err.message);
+          });
         console.log(`Server is running on port ${PORT}`)
 })
 
