@@ -42,10 +42,10 @@ describe('Organisation Access', () => {
       });
     const user2 = await User.create({ 
       userId: '123',
-      firstName: 'first',
-      lastName: 'second',
-      email: 'me@example.com',
-      password: 'mypass'
+      firstName: 'first1',
+      lastName: 'second2',
+      email: 'me@example.com2',
+      password: 'mypass2'
      });
     organisation = await Organisation.create({ 
       orgId: '72727',

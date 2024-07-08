@@ -106,7 +106,6 @@ app.post('/auth/login', async(req, res) => {
 
 app.get('/api/users/:id', authenticateToken, async(req, res) => {
     const { id } = req.params
-    console.log(req.user)
     if (id !== req.user.userId) return res.status(403).json({
         status: 'Unauthorized',
         message: 'Access denied',
