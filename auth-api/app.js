@@ -62,7 +62,7 @@ app.post('/auth/login', async (req, res) => {
         console.log(email)
         if (!user) return res.status(401).json({
             status: 'Bad request', 
-            message: 'Authentication failed', 
+            message: 'Authentication failed',
             statusCode: 401
         })
         const validPassword = await bcrypt.compare(password, user.password)

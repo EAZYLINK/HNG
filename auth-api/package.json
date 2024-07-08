@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "description": "",
   "main": "app.js",
+  "files": [
+    "index.js",
+    "lib/",
+    "commands/"
+  ],
   "scripts": {
     "start": "node app.js",
     "test": "jest"
